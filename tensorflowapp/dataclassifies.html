@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>First HTML Page</title>
+</head>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+<!-- <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs/dist/tf.min.js"></script> -->
+<!-- One-Hot Encoding Y label : 3 columns with ys.label == spices ? 1:0 -->
+<!-- nearon network with : input 4 unit (=[numOfFeatures]), hidden layer 5 units, output 3 unit -->
+<script lang="js">
+    async function run() {
+        // read from csv file
+        const csvUrl = 'iris.csv';
+        const trainingData = tf.data.csv(csvUrl, {
+            columnConfigs: {
+                // species column is Label (string value)
+                species: {
+                    isLabel: true
+                }
+            }
+        });
+
+        const numOfFeatures = (await trainingData.columnNames()).length - 1;
+        const numOfSamples = 150;
+
+        // One Hot Encode the Y values
+        const convertedData =
+            trainingData.map(({
+                xs,
+                ys
+            }) => {
+                const labels = [
+                    ys.species == "setosa" ? 1 : 0,
+                    ys.species == "virginica" ? 1 : 0,
+                    ys.species == "versicolor" ? 1 : 0
+                ]
+                return {
+                    xs: Object.values(xs),
+                    ys: Object.values(labels)
+                };
+
+            }).batch(10);
+
+        const model = tf.sequential();
+        // Input = 4, hidden layer = 5
+        model.add(tf.layers.dense({
+            units: 5,
+            inputShape: [numOfFeatures],
+            activation: "sigmoid"
+        }));
+        // output = 3 units
+        model.add(tf.layers.dense({
+            units: 3,
+            activation: "softmax"
+        }));
+        // learningrate = 0.06
+        model.compile({
+                loss: 'categoricalCrossentropy',
+                optimizer: tf.train.adam(0.06)
+            })
+            // await only use in async
+        await model.fitDataset(
+            convertedData, {
+                epochs: 100,
+                callbacks: {
+                    onEpochEnd: async(epoch, logs) => {
+                        console.log("Epoch: " + epoch + " Loss: " + logs.loss);
+                    }
+                }
+            }
+        );
+
+        const testVal = tf.tensor2d([4.4, 2.9, 1.4, 0.2], [1, 4]);
+        const prediction = model.predict(testVal);
+        const pIndex = tf.argMax(prediction, axis = 1).dataSync();
+
+        const classNames = ["Setosa", "Virginica", "Versicolor"];
+
+        // alert(prediction)
+        console.log(convertedData);
+        alert(classNames[pIndex])
+    }
+
+    run();
+</script>
+
+<body>
+
+</body>
+
+</html>
