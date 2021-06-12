@@ -23,8 +23,8 @@ dataset = pd.read_csv('datasets/appdata10.csv')
 ### EDA ###
 # set show all column
 pd.set_option('display.expand_frame_repr', False)
-dataset.head()
-dataset.describe()
+dataset.head() 
+dataset.describe() # print out count for number of sample, mean
 
 ## Data Cleaning ##
 dataset['hour'] = dataset.hour.str.slice(1,3).astype(int)
